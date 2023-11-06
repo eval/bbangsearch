@@ -1,0 +1,4 @@
+{:bbin/bin {bbang {:main-opts ["-m" "bbangsearch.main"]}}
+ :deps     {io.github.eval/bbangsearch {:local/root "."}
+            org.babashka/cli           {:mvn/version "0.4.39"}
+            babashka/fs                {:mvn/version "0.4.19"}}}
