@@ -1,4 +1,4 @@
-# bbangsearch
+# bbangsearch❗
 
 A CLI for [DuckDuckGo's bang❗ searches](https://duckduckgo.com/bangs) written in [Babashka](https://babashka.org/).
 
@@ -56,6 +56,20 @@ $ bbang bangs:ls | grep -e '\.dk'
 # Using DuckDuckGo's bang search
 $ bbang bangs github
 ```
+
+### Add custom ❗ searches
+
+Create a file `$XDG_CONFIG_HOME/bbangsearch/bangs.edn` (typically `~/.config/bbangsearch/bangs.edn`) with something like:
+```
+{
+  "mybang"   {:desc "My Project notifications"
+              :tpl  "https://github.com/notifications?query=repo%3Aeval%2Fbbangsearch+{{s|urlescape}}"}
+  "myotherbang"   {:desc "My Project PRs"
+                   :tpl  "https://github.com/pulls?q=is%3Apr+archived%3Afalse+repo%3Aeval%2Fbbangsearch+sort%3Aupdated-desc+is%3Aopen+{{s|urlescape}}"}
+}
+```
+
+Custom bangs take precedence over existing bangs.
 
 ## License
 
