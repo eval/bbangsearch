@@ -60,7 +60,7 @@ $ bbang bangs github
 ### Add custom ❗ searches
 
 Create a file `$XDG_CONFIG_HOME/bbangsearch/bangs.edn` (typically `~/.config/bbangsearch/bangs.edn`) with something like:
-```
+```clojure
 {
   "mybang"   {:desc "My Project notifications"
               :tpl  "https://github.com/notifications?query=repo%3Aeval%2Fbbangsearch+{{s|urlescape}}"}
