@@ -8,10 +8,47 @@
             [clojure.string :as string]
             [selmer.parser :as selmer]))
 
+(defn- compile-ifmatches-args [[expr re :as args] context-map]
+  #_(prn ::compile-ifmatches-args :args args :context-map context-map)
+  (let [matchee (selmer/render (str "{{" expr "}}") context-map)
+        matcher (read-string re)]
+    (when-not (or (instance? java.util.regex.Pattern matcher)
+                  (= 2 (count args)))
+      (throw (ex-info (str "invalid arguments passed to 'ifmatches' tag: " args \newline
+                           "Example: {% ifmatches some-var #\"foo\" %} ")
+                      {:args args})))
+    [matchee matcher]))
+
+(selmer/add-tag!
+ :ifmatches
+ (fn [& [args context-map content :as m]]
+   #_(prn :content content)
+   (let [negate?           (= "not" (first args))
+         args              (if negate? (rest args) args)
+         [matchee matcher] (compile-ifmatches-args args context-map)
+         body              (get-in content [:ifmatches :content])
+         pred              (if negate? (complement re-find) re-find)]
+     (if (pred matcher matchee)
+       body
+       (-> content :else :content))))
+ :else :endifmatches)
+
 (def ^:private  current-file *file*)
 
 (defn- git [& args]
   (some-> (apply process "git" args) :out slurp string/trimr))
+
+(defn- github-user []
+  (or (System/getenv "BBANG_GITHUB_USER")
+      (System/getenv "GITHUB_USER")
+      (git "config" "--get" "github.user")))
+
+(defn- github-org []
+  (or
+   (System/getenv "BBANG_GITHUB_ORG")
+   (System/getenv "GITHUB_ORG")
+   (git "config" "--get" "github.org")
+   (github-user)))
 
 (defn- current-version []
   (let [dev?    (nil? (io/resource "VERSION"))
@@ -26,8 +63,8 @@
 (defn- print-version []
   (println (current-version)))
 
-(defn- bang-url [bang s]
-  (selmer/render bang {:s (str s)}))
+(defn- bang-url [bang vars]
+  (selmer/render bang vars))
 
 (defn- printable-bangs [bangs]
   (sort-by :bang (reduce (fn [acc [bang bang-cfg]]
@@ -55,11 +92,19 @@
                         (pr-str term)
                         term)) bang-args)))
 
+(def ^:private vars {'github-org #'github-org})
 
 (defn- handle-bang [requested-bang bang-args cli-opts]
-  (if-let [{bang-tpl :tpl :as _bang} (get (bangs/all) requested-bang)]
-    (let [q   (quote-bang-args bang-args)
-          url (string/trim (bang-url bang-tpl q))]
+  (if-let [{bang-tpl :tpl :as bang} (get (bangs/all) requested-bang)]
+    (let [known-vars    (keys vars)
+          required-vars (some-> bang meta :vars)
+          unknown-vars  (remove (set known-vars) required-vars)
+          _             (when (seq unknown-vars)
+                          (throw (ex-info (str "Unknown vars: " (pr-str unknown-vars) ". Valid vars: " (pr-str known-vars)) {})))
+          vars          (update-keys (update-vals (select-keys vars required-vars)
+                                                  #(apply % '())) keyword)
+          s             (quote-bang-args bang-args)
+          url           (string/trim (bang-url bang-tpl (merge vars {:s (str s)})))]
       (cond
         (:url cli-opts) (println url)
         :else           (browse-url url)))
