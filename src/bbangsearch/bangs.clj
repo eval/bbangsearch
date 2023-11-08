@@ -23,9 +23,18 @@
       (printf "Error parsing edn file '%s': %s\n" source (.getMessage e)))))
 
 (def additional
-  {"ghclj"   {:desc "GitHub Clojure projects" :tpl "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=repositories&l=Clojure"}
-   "grep"    {:desc "Grep.app" :tpl "https://grep.app/search?q={{s|urlescape}}"}
-   "grepclj" {:desc "Grep.app Clojure code" :tpl "https://grep.app/search?q={{s|urlescape}}&filter[lang][0]=Clojure"}})
+  {"ghclj"   {:desc "GitHub Clojure projects"
+              :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=repositories&l=Clojure"}
+   "ghcclj"  {:desc "GitHub Clojure code"
+              :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=code"}
+   "grep"    {:desc "Grep.app"
+              :tpl  "https://grep.app/search?q={{s|urlescape}}"}
+   "grepclj" {:desc "Grep.app Clojure code"
+              :tpl  "https://grep.app/search?q={{s|urlescape}}&filter[lang][0]=Clojure"}
+   "@gem"    {:desc "Feeling lucky version of 'gem'"
+              :tpl  "https://rubygems.org/gems/{{s}}"}
+   "@ghrepo" {:desc "Like `ghrepo` but extracts repo from git-folder (and more). See README."
+              :tpl  "{% if s|empty? %}https://github.com/{{org&project}}{% else %}https://github.com/search?q=repo%3A{{org&project|urlescape}}%20{{s|urlescape}}&type=code{% endif %}"}})
 
 (defn- assoc-domain [bang]
   (let [bang->domain #(some->> % :tpl (re-find #"https?:\/\/([^/]+)") second)]
@@ -40,16 +49,28 @@
 (defn all []
   (merge default additional (user)))
 
+(defn find [bang]
+  (let [urlify-paths          #(if (re-find #"^/" %)
+                                 (str "https://duckduckgo.com" %)
+                                 %)
+        bangs-sans-urlescape  #{"ghrepo"}
+        maybe-strip-urlescape (fn [m]
+                                (if (bangs-sans-urlescape bang)
+                                  (update m :tpl #(string/replace % #"\|urlescape" ""))
+                                  m))]
+    (some-> bang
+            (->> (get (all)))
+            (update :tpl urlify-paths)
+            maybe-strip-urlescape)))
 
 (comment
 
   (count default)
   (count (bangs))
-  (update (update-in (dissoc (reduce (fn [acc {desc :s tpl :u bang :t domain :d}]
-                                (let [tpl (string/replace tpl #"\{\{\{s\}\}\}" "{{s|urlescape}}")]
-                                  (assoc acc bang {:domain domain :desc desc :tpl tpl}))) {} (load-edn (io/resource "bangs.edn")))
-                             "web1913")
-                     ["bang" :tpl] #(str "https://duckduckgo.com" %))
+  (update (dissoc (reduce (fn [acc {desc :s tpl :u bang :t domain :d}]
+                            (let [tpl (string/replace tpl #"\{\{\{s\}\}\}" "{{s|urlescape}}")]
+                              (assoc acc bang {:domain domain :desc desc :tpl tpl}))) {} (load-edn (io/resource "bangs.edn")))
+                  "web1913")
           "bang" assoc-domain)
 
   #_:end)
