@@ -1,0 +1,118 @@
+name: Release
+run-name: ${{ inputs.version }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. v1.2.3, v1.2.3-pre.1)'
+        type: string
+        required: true
+  push:
+    branches:
+      - main
+
+jobs:
+  Config:
+    runs-on: ubuntu-latest
+    # version (v1.2.3, v1.2.3-9-adfh), release-name (unstable, stable, v1.2.3)
+    outputs:
+      tagged-release: ${{ steps.provided.outputs.version && true }}
+      version: ${{ steps.provided.outputs.version || steps.derived.outputs.version }}
+      release-name: ${{ steps.provided.outputs.release-name || steps.derived.outputs.release-name }}
+      stable: ${{ steps.provided.outputs.stable }}
+      pre-release: ${{ steps.provided.outputs.pre-release || steps.derived.outputs.pre-release }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Validate provided version
+        if: "${{ inputs.version != '' }}"
+        id: provided
+        run: |
+          if ! echo "${{ inputs.version }}" | grep -qE '^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(-pre\.[[:digit:]]+)?$'; then
+            echo "::error::The supplied version (${{ inputs.version }}) is not a valid version string."
+            exit 1
+          fi
+          if echo "${{ inputs.version }}" | grep -qE '^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-pre\.[[:digit:]]+$'; then
+            echo "pre-release=true" >> $GITHUB_OUTPUT
+          else
+            echo "pre-release=false" >> $GITHUB_OUTPUT
+            echo "stable=true" >> $GITHUB_OUTPUT
+          fi
+          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          echo "release-name=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          echo "release-sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+      - name: Derive version
+        if: "${{ inputs.version == '' }}"
+        id: derived
+        run: |
+          echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+          echo "release-name=unstable" >> $GITHUB_OUTPUT
+          echo "release-sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "pre-release=true" >> $GITHUB_OUTPUT
+  Build:
+    needs: [Config]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install clojure tools
+        uses: DeLaGuardo/setup-clojure@9.4
+        with:
+          bb: latest
+      - name: Update VERSION
+        run: echo "${{ needs.Config.outputs.version }}" > resources/VERSION
+      - name: Zip it
+        run: zip -r bbang.zip . -x ".git/*"
+      - name: Build uberjar
+        run: bb uberjar bbang-bb.jar -m bbangsearch.main
+      - name: Testrun uberjar
+        run: bb bbang-bb.jar -v
+      - name: Release stable
+        if: "${{ needs.Config.outputs.stable }}"
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            - version: ${{ needs.Config.outputs.version }}
+            - SHA: ${{ github.sha }}
+            - Run with babashka: `bb bbang-bb.jar`
+          prerelease: false
+          name: stable
+          target_commitish: ac871dca7989b25d58c83b96767a35c1ec4a5124 # first commit
+          tag_name: stable
+          files: |
+            bbang-bb.jar
+            bbang.zip
+      - name: Release unstable
+        if: ${{ always() }}
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            - version: ${{ needs.Config.outputs.version }}
+            - SHA: ${{ github.sha }}
+            - Run with babashka: `bb bbang-bb.jar`
+          prerelease: true
+          name: unstable
+          target_commitish: ac871dca7989b25d58c83b96767a35c1ec4a5124 # first commit
+          tag_name: unstable
+          files: |
+            bbang-bb.jar
+            bbang.zip
+      - name: Tagged release
+        if: "${{ needs.Config.outputs.tagged-release }}"
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            - version: ${{ needs.Config.outputs.version }}
+            - SHA: ${{ github.sha }}
+            - Run with babashka: `bb bbang-bb.jar`
+          prerelease: ${{ needs.Config.outputs.pre-release }}
+          name: ${{ needs.Config.outputs.release-name }}
+          target_commitish: ${{ github.sha }}
+          tag_name: ${{ needs.Config.outputs.release-name }}
+          files: |
+            bbang-bb.jar
+            bbang.zip
