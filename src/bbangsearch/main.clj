@@ -62,8 +62,8 @@
 (defn- print-version []
   (println (bbang-version)))
 
-(defn- bang-url [bang vars]
-  (selmer/render bang vars))
+(defn- bang-url [bang-tpl vars]
+  (selmer/render bang-tpl vars))
 
 (defn- printable-bangs [bangs]
   (sort-by :bang (reduce (fn [acc [bang bang-cfg]]
@@ -95,7 +95,7 @@
 
 (defmulti bang-vars #'bang-vars-dispatch)
 
-(defmethod bang-vars "@ghrepo" [_bang [org&project & terms]]
+(defmethod bang-vars "ghrepo" [_bang [org&project & terms]]
   (let [org&project (cond
                       (or
                        (nil? org&project)
@@ -113,6 +113,7 @@
   {:s (quote-bang-args bang-args)})
 
 (defn- handle-bang [requested-bang bang-args cli-opts]
+  #_(prn :bang-args bang-args :cli-opts cli-opts)
   (if-let [{bang-tpl :tpl :as _bang} (bangs/find requested-bang)]
     (let [vars (bang-vars requested-bang bang-args)
           url  (string/trim (bang-url bang-tpl vars))]

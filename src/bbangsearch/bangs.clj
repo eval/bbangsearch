@@ -1,4 +1,5 @@
 (ns bbangsearch.bangs
+  (:refer-clojure :exclude [find])
   (:require [babashka.fs :as fs] :reload
             [clojure.edn :as edn]
             [clojure.java.io :as io]
@@ -31,9 +32,13 @@
               :tpl  "https://grep.app/search?q={{s|urlescape}}"}
    "grepclj" {:desc "Grep.app Clojure code"
               :tpl  "https://grep.app/search?q={{s|urlescape}}&filter[lang][0]=Clojure"}
-   "@gem"    {:desc "Feeling lucky version of 'gem'"
+   "rdoc"    {:desc "rubydoc.info, gems only (fixes default)"
+              :tpl  "https://www.rubydoc.info/find/gems?q={{s|urlescape}}"}
+   "@rdoc"   {:dec "Jump to gem on rubydoc.info"
+              :tpl "https://www.rubydoc.info/gems/{{s}}"}
+   "@gem"    {:desc "Jump to gem on rubygems.org"
               :tpl  "https://rubygems.org/gems/{{s}}"}
-   "@ghrepo" {:desc "Like `ghrepo` but extracts repo from git-folder (and more). See README."
+   "ghrepo"  {:desc "Search/visit repo from working dir. See README."
               :tpl  "{% if s|empty? %}https://github.com/{{org&project}}{% else %}https://github.com/search?q=repo%3A{{org&project|urlescape}}%20{{s|urlescape}}&type=code{% endif %}"}})
 
 (defn- assoc-domain [bang]
