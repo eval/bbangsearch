@@ -1,3 +1,4 @@
 .clj-kondo/.cache/
 .cpcache
 .lsp
+/resources/bangs.org.edn
