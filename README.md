@@ -7,7 +7,7 @@ A CLI for [DuckDuckGo's bang❗ searches](https://duckduckgo.com/bangs) written 
 I think bang searches are really great. Having DDG as my default search-engine, it's often easier to just type `!gh project` in the address bar than to cycle through open browser tabs to find the page of said GitHub project.
 
 I found there's also some shortcomings:
-- I often wish there would be a 'feeling lucky'-mode  
+- I often wish there would be a 'feeling lucky'-mode
   often there's no need to search, but just jump to the first result.
 - some bangs are no longer working
 - option to add custom bangs
@@ -133,7 +133,7 @@ $ bbang ghrepo eval/deps-try
 $ bbang ghrepo eval/deps-try some term
 ```
 
-It also has some implied defaults.  
+It also has some implied defaults.
 When in a working directory that has a git remote pointing to GitHub[^1], you can visit or search the project:
 ```shell
 # open GitHub project page
@@ -153,16 +153,16 @@ $ bbang ghrepo deps-try
 Set the github-org like this (in order of precedence):
 * set env-var `BBANG_GITHUB_ORG`
 * set env-var `GITHUB_ORG`
-* git setting `github.org`  
+* git setting `github.org`
   `$ git config --global github.org mycom`  (leave out `--global` to set it for the current repos).
 * set env-var `BBANG_GITHUB_USER`
 * set env-var `GITHUB_USER`
-* git setting `github.user`  
+* git setting `github.user`
   `$ git config --global github.user eval` (leave out `--global` to set it for the current repos).
 
 ### Add custom ❗ searches
 
-Custom bangs will be read from `~/.config/bbangsearch/bangs.edn` (or `$XDG_CONFIG_HOME/bbangsearch/bangs.edn`).  
+Custom bangs will be read from `~/.config/bbang/bangs.edn` (or `$XDG_CONFIG_HOME/bbang/bangs.edn`).
 Example:
 ```clojure
 {
@@ -174,7 +174,7 @@ Example:
 ```
 
 The templating system used is [Selmer](https://github.com/yogthos/Selmer/). `s` will be set to whatever is searched for, e.g. `some "exact sentence"` when executing `bbang mybang some "exact sentence"`.
-Custom bangs take precedence over existing bangs. This e.g. allows for overriding defunct bangs.  
+Custom bangs take precedence over existing bangs. This e.g. allows for overriding defunct bangs.
 
 Using Selmer's tags you can do nifty things:
 ```clojure
@@ -185,7 +185,7 @@ Using Selmer's tags you can do nifty things:
                      :tpl "{% ifmatches #\"^PROJ-\" s %}https://tickets.com/show/{{s}}{% else %}https://tickets.com/search?q={{s|urlescape}}{% endifmatches %}"}
 }
 ```
-The first example shows how to distinguish between executing `bbang mybang` and `bbang mybang some query` using Selmer's [if-tag](https://github.com/yogthos/Selmer/#if).  
+The first example shows how to distinguish between executing `bbang mybang` and `bbang mybang some query` using Selmer's [if-tag](https://github.com/yogthos/Selmer/#if).
 The second example shows how to distinguish between jumping to a known ticket (e.g. `PROJ-123`) and doing a search. It uses the bbang-specific `ifmatches`-tag.
 
 ## License

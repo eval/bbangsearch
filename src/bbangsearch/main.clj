@@ -8,6 +8,31 @@
             [clojure.string :as string]
             [selmer.parser :as selmer]))
 
+(defn- compile-ifmatches-args [[re expr :as args] context-map]
+  #_(prn ::compile-ifmatches-args :args args :context-map context-map)
+  (let [matchee (get context-map (keyword expr))
+        matcher (read-string re)]
+    (when-not (and (instance? java.util.regex.Pattern matcher)
+                   (= 2 (count args)))
+      (throw (ex-info (str "Invalid arguments passed to 'ifmatches' tag: " args \newline
+                           "Example: {% ifmatches #\"foo\" some-var %},,,{% endifmatches %}")
+                      {:args args})))
+    [matcher matchee]))
+
+(selmer/add-tag!
+ :ifmatches
+ (fn [& [args context-map content :as _m]]
+   #_(prn :content content)
+   (let [negate?           (= "not" (first args))
+         args              (if negate? (rest args) args)
+         [matcher matchee] (compile-ifmatches-args args context-map)
+         body              (get-in content [:ifmatches :content])
+         pred              (if negate? (complement re-find) re-find)]
+     (if (pred matcher matchee)
+       body
+       (-> content :else :content))))
+ :else :endifmatches)
+
 (defn- throw-ex [msg]
   (throw (ex-info msg {})))
 

@@ -6,7 +6,7 @@
             [clojure.string :as string]
             [bbangsearch.util :as util]))
 
-(def ^:private config-home (delay (fs/xdg-config-home "bbangsearch")))
+(def ^:private config-home (delay (fs/xdg-config-home "bbang")))
 
 ;; SOURCE https://clojuredocs.org/clojure.edn/read#example-5a68f384e4b09621d9f53a79
 (defn- load-edn
@@ -30,22 +30,24 @@
   (load-edn (io/resource "bangs.edn")))
 
 (defn additional []
-  (-> {"ghclj"   {:desc "GitHub Clojure projects"
-                  :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=repositories&l=Clojure"}
-       "ghcclj"  {:desc "GitHub Clojure code"
-                  :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=code"}
-       "grep"    {:desc "Grep.app"
-                  :tpl  "https://grep.app/search?q={{s|urlescape}}"}
-       "grepclj" {:desc "Grep.app Clojure code"
-                  :tpl  "https://grep.app/search?q={{s|urlescape}}&filter[lang][0]=Clojure"}
-       "rdoc"    {:desc "rubydoc.info, gems only (fixes default)"
-                  :tpl  "https://www.rubydoc.info/find/gems?q={{s|urlescape}}"}
-       "@rdoc"   {:dec "Jump to gem on rubydoc.info"
-                  :tpl "https://www.rubydoc.info/gems/{{s}}"}
-       "@gem"    {:desc "Jump to gem on rubygems.org"
-                  :tpl  "https://rubygems.org/gems/{{s}}"}
-       "ghrepo"  {:desc "Search/visit repo from working dir. See README."
-                  :tpl  "{% if s|empty? %}https://github.com/{{org&project}}{% else %}https://github.com/search?q=repo%3A{{org&project|urlescape}}%20{{s|urlescape}}&type=code{% endif %}"}}
+  (-> {"ghclj"     {:desc "GitHub Clojure projects"
+                    :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=repositories&l=Clojure"}
+       "ghcclj"    {:desc "GitHub Clojure code"
+                    :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=code"}
+       "grep"      {:desc "Grep.app"
+                    :tpl  "https://grep.app/search?q={{s|urlescape}}"}
+       "grepclj"   {:desc "Grep.app Clojure code"
+                    :tpl  "https://grep.app/search?q={{s|urlescape}}&filter[lang][0]=Clojure"}
+       "rdoc"      {:desc "rubydoc.info, gems only" ;; fixes default
+                    :tpl  "https://www.rubydoc.info/find/gems?q={{s|urlescape}}"}
+       "@rdoc"     {:dec "Jump to gem on rubydoc.info"
+                    :tpl "https://www.rubydoc.info/gems/{{s}}"}
+       "@gem"      {:desc "Jump to gem on rubygems.org"
+                    :tpl  "https://rubygems.org/gems/{{s}}"}
+       "ghrepo"    {:desc "Search/visit repo from working dir. See README."
+                    :tpl  "{% if s|empty? %}https://github.com/{{org&project}}{% else %}https://github.com/search?q=repo%3A{{org&project|urlescape}}%20{{s|urlescape}}&type=code{% endif %}"}
+       "tldrlegal" {:desc "TL;DR Legal" ;; fixes default
+                    :tpl  "https://www.tldrlegal.com/search?query={{s|urlescape}}"}}
       (update-vals ensure-domain)))
 
 (defn user []
