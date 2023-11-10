@@ -8,12 +8,73 @@
             [clojure.string :as string]
             [selmer.parser :as selmer]))
 
+(defn- compile-ifmatches-args [[re expr :as args] context-map]
+  #_(prn ::compile-ifmatches-args :args args :context-map context-map)
+  (let [matchee (get context-map (keyword expr))
+        matcher (read-string re)]
+    (when-not (and (instance? java.util.regex.Pattern matcher)
+                   (= 2 (count args)))
+      (throw (ex-info (str "Invalid arguments passed to 'ifmatches' tag: " args \newline
+                           "Example: {% ifmatches #\"foo\" some-var %},,,{% endifmatches %}")
+                      {:args args})))
+    [matcher matchee]))
+
+(selmer/add-tag!
+ :ifmatches
+ (fn [& [args context-map content :as _m]]
+   #_(prn :content content)
+   (let [negate?           (= "not" (first args))
+         args              (if negate? (rest args) args)
+         [matcher matchee] (compile-ifmatches-args args context-map)
+         body              (get-in content [:ifmatches :content])
+         pred              (if negate? (complement re-find) re-find)]
+     (if (pred matcher matchee)
+       body
+       (-> content :else :content))))
+ :else :endifmatches)
+
+(defn- throw-ex [msg]
+  (throw (ex-info msg {})))
+
+(defn- handle-ex [e]
+  (println (ex-message e))
+  (System/exit 1))
+
 (def ^:private  current-file *file*)
 
 (defn- git [& args]
   (some-> (apply process "git" args) :out slurp string/trimr))
 
-(defn- current-version []
+(defn- github-user []
+  (or (System/getenv "BBANG_GITHUB_USER")
+      (System/getenv "GITHUB_USER")
+      (not-empty (git "config" "--get" "github.user"))))
+
+(defn- github-org []
+  (or
+   (System/getenv "BBANG_GITHUB_ORG")
+   (System/getenv "GITHUB_ORG")
+   (not-empty (git "config" "--get" "github.org"))
+   (github-user)))
+
+(defn- current-github-remote-url []
+  (let [ssh-url?       (comp #(re-find #"^git@github" %) :url)
+        github-url?    (comp #(re-find #"github\.com" %) :url)
+        origin?        (comp #(= % "origin") :name)
+        remote->url    #(git "remote" "get-url" %)
+        remotes        (map #(assoc {} :name % :url (remote->url %))
+                            (string/split-lines (git "remote")))
+        github-remotes (filter github-url? remotes)]
+    (some-> (concat (filter origin? github-remotes)
+                    (filter ssh-url? github-remotes)
+                    github-remotes)
+            first
+            :url)))
+
+(defn- current-github-org&project []
+  (some->> (current-github-remote-url) (re-find #"[:/]([^.]+)\.git$") second))
+
+(defn- bbang-version []
   (let [dev?    (nil? (io/resource "VERSION"))
         bin     (if dev? "bbang-dev" "bbang")
         version (string/trim
@@ -24,10 +85,10 @@
     (str bin " " version)))
 
 (defn- print-version []
-  (println (current-version)))
+  (println (bbang-version)))
 
-(defn- bang-url [bang s]
-  (selmer/render bang {:s (str s)}))
+(defn- bang-url [bang-tpl vars]
+  (selmer/render bang-tpl vars))
 
 (defn- printable-bangs [bangs]
   (sort-by :bang (reduce (fn [acc [bang bang-cfg]]
@@ -55,28 +116,48 @@
                         (pr-str term)
                         term)) bang-args)))
 
+(defn- bang-vars-dispatch [bang _bang-args] bang)
+
+(defmulti bang-vars #'bang-vars-dispatch)
+
+(defmethod bang-vars "ghrepo" [_bang [org&project & terms]]
+  (let [org&project (cond
+                      (or
+                       (nil? org&project)
+                       (= org&project "_"))            (or (current-github-org&project)
+                                                           (throw-ex "Can't establish the github-url of this project. Is there a git remote pointing to GitHub?"))
+                      (string/index-of org&project \/) org&project
+                      :else
+                      (if-let [org (github-org)]
+                        (str org "/" org&project)
+                        (throw-ex "Can't establish github-org. Setup via https://github.com/eval/bbangsearch#ghrepo.")))]
+    (cond-> {:org&project org&project}
+      (seq terms) (assoc :s (quote-bang-args terms)))))
+
+(defmethod bang-vars :default [_bang bang-args]
+  {:s (quote-bang-args bang-args)})
 
 (defn- handle-bang [requested-bang bang-args cli-opts]
-  (if-let [{bang-tpl :tpl :as _bang} (get (bangs/all) requested-bang)]
-    (let [q   (quote-bang-args bang-args)
-          url (string/trim (bang-url bang-tpl q))]
+  #_(prn :bang-args bang-args :cli-opts cli-opts)
+  (if-let [{bang-tpl :tpl :as _bang} (bangs/find requested-bang)]
+    (let [vars (bang-vars requested-bang bang-args)
+          url  (string/trim (bang-url bang-tpl vars))]
       (cond
         (:url cli-opts) (println url)
         :else           (browse-url url)))
-    (do (println (str "Unknown bang '" requested-bang "'."))
-        (System/exit 1))))
+    (throw-ex (str "Unknown bang '" requested-bang "'."))))
 
 (defn- handle-bangs-ls [_ls-args cli-opts]
   (print-bangs (printable-bangs (bangs/all)) cli-opts))
 
 (defn- handle-help []
-  (println (str (current-version) "
+  (println (str (bbang-version) "
 
 A CLI for DuckDuckGo's bang searches written in Babashka.
 
 "
                   (util/bold  "USAGE" {}) "
-  $ bbang [bang [terms] [--url]]
+  $ bbang [bang [& terms] [--url]]
   $ bbang [COMMAND]
 
 "
@@ -85,19 +166,22 @@ A CLI for DuckDuckGo's bang searches written in Babashka.
 
 "
                   (util/bold "COMMANDS" {}) "
-  bangs:ls  List all bangs (or via `bbang bangs <terms>`)
+  bangs:ls  List all bangs (or via `bbang bangs [& terms]`)
 ")))
 
 (defn -main [& args]
-  (let [{[cmd & cmd-args :as _parsed-args] :args
-         :keys                             [opts]} (cli/parse-args args {:restrict [:version :help :url]
-                                                                         :alias    {:h :help :v :version}})]
-    #_(prn :cmd cmd :cmd-args cmd-args #_#_:parsed-args parsed-args)
-    (cond
-      (or (empty? args) (:help opts)) (handle-help)
-      (:version opts)                 (print-version)
-      (= cmd "bangs:ls")              (handle-bangs-ls cmd-args opts)
-      :else                           (handle-bang cmd cmd-args opts))))
+  (try
+    (let [{[cmd & cmd-args :as _parsed-args] :args
+           :keys                             [opts]} (cli/parse-args args {:restrict [:version :help :url]
+                                                                           :alias    {:h :help :v :version}})]
+      #_(prn :cmd cmd :cmd-args cmd-args #_#_:parsed-args parsed-args)
+      (cond
+        (or (empty? args) (:help opts)) (handle-help)
+        (:version opts)                 (print-version)
+        (= cmd "bangs:ls")              (handle-bangs-ls cmd-args opts)
+        :else                           (handle-bang cmd cmd-args opts)))
+    (catch Exception e
+      (handle-ex e))))
 
 (comment
 

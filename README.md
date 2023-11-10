@@ -2,11 +2,60 @@
 
 A CLI for [DuckDuckGo's bang❗ searches](https://duckduckgo.com/bangs) written in [Babashka](https://babashka.org/).
 
+## Rationale
+
+I think bang searches are really great. Having DDG as my default search-engine, it's often easier to just type `!gh project` in the address bar than to cycle through open browser tabs to find the page of said GitHub project.
+
+I found there's also some shortcomings:
+- I miss a 'feeling lucky'-mode  
+  often there's no need to consider all results, just the first result.
+- some bangs are no longer working
+- no option to add custom bangs
+- they only work in the browser
+
+Enter `bbang`:
+* open (or get the url of) any of the ~14k bang search pages via the commandline
+* allow overriding/adding bangs
+* list all bangs (in an easily grep-able format)
+* allow for 'jump-to' functionality
+
+### examples
+
+```shell
+# search all tickets (using a custom bang)
+$ bbang proj/tickets some term
+
+# visit ticket
+$ bbang proj/tickets PROJ-123
+
+# visit the GitHub page of the git repository you're working on
+$ bbang ghrepo
+
+# search it
+$ bbang ghrepo _ some term
+
+# visit another one of your repositories
+$ bbang ghrepo deps-try
+```
+
 ## Installation
 
-### homebrew
+### Homebrew (Linux and macOS)
 
-TBD
+#### Install
+
+``` bash
+$ brew install eval/brew/bbang
+# For future upgrades do:
+$ brew update && brew upgrade bbang
+```
+
+There's also the unstable releases (tracking the mainline):
+``` bash
+$ brew install --head eval/brew/bbang
+# For future upgrades do:
+$ brew update && brew reinstall bbang
+```
 
 ### standalone
 
@@ -26,7 +75,7 @@ $ bbin install io.github.eval/bbangsearch
 $ bbang -h
 
 # as something else
-$ bbin install io.github.eval/bbangsearch --as bangbang
+$ bbin install io.github.eval/bbangsearch --as b
 ```
 
 ## Usage
@@ -34,7 +83,7 @@ $ bbin install io.github.eval/bbangsearch --as bangbang
 ### ❗
 
 ```shell
-# search github
+# search GitHub
 $ bbang gh bbangsearch
 
 # open (Google's) search-page
@@ -45,6 +94,8 @@ $ bbang gh bbangsearch --url
 ```
 
 ### What ❗?
+
+All roughly 14k bang searches from DuckDuckGo are included.
 
 ```shell
 # print table
@@ -57,19 +108,91 @@ $ bbang bangs:ls | grep -e '\.dk'
 $ bbang bangs github
 ```
 
+### Additional ❗s
+
+There's also a couple of additional bangs:
+
+| Bang  | Description |
+| ------------- | ------------- |
+| `ghclj`  | Search Clojure projects on GitHub (similar to `gh`)  |
+| `ghcclj` | Search Clojure code on GitHub (similar to `ghc`) |
+| `grep` | Search Grep.app |
+| `grepclj` | Search Grep.app for Clojure code |
+| `rdoc` | Search rubydoc.info, gems only (fixes default bang) |
+| `@rdoc` | Jump to gem on rubydoc.info |
+| `@gem` | Jump to gem on rubygems.org |
+| `ghrepo` | Visit/search repo on GitHub (see doc below) |
+
+#### ghrepo
+
+This bang deserves it's own paragraph as it's quite powerful.  
+
+In its simplest form it allows for visiting/searching a GitHub repository you pass it:
+```shell
+# visit
+$ bbang ghrepo eval/bbangsearch
+
+# search
+$ bbang ghrepo eval/bbangsearch some issue
+```
+
+It also has some implied defaults.  
+E.g. with the right settings, you can leave out the GitHub organization and only provide a project-name:
+```shell
+# visit
+$ bbang ghrepo bbangsearch
+
+# search
+$ bbang ghrepo bbangsearch some issue
+```
+
+bbang derives the GitHub organization from the following settings (in order of precedence):
+* env-var `BBANG_GITHUB_ORG`
+* env-var `GITHUB_ORG`
+* git setting `github.org`  
+  `$ git config --global github.org mycom`  (leave out `--global` to set it for the current repos).
+* set env-var `BBANG_GITHUB_USER`
+* set env-var `GITHUB_USER`
+* git setting `github.user`  
+  `$ git config --global github.user eval` (leave out `--global` to set it for the current repos).
+
+Finally, when in a git working directory that has a remote pointing to GitHub[^1], you neither need to provide org or project:
+```
+# visit
+$ bbang ghrepo
+
+# search
+$ bbang ghrepo _ some issue
+```
+[^1]: in order of preference: the origin-url, any remote with an ssh-url
+
 ### Add custom ❗ searches
 
-Create a file `$XDG_CONFIG_HOME/bbangsearch/bangs.edn` (typically `~/.config/bbangsearch/bangs.edn`) with something like:
+Custom bangs will be read from `~/.config/bbang/bangs.edn` (or `$XDG_CONFIG_HOME/bbang/bangs.edn`).
+Example:
 ```clojure
 {
-  "mybang"   {:desc "My Project notifications"
-              :tpl  "https://github.com/notifications?query=repo%3Aeval%2Fbbangsearch+{{s|urlescape}}"}
+  "mybang"        {:desc "My Project notifications"
+                   :tpl  "https://github.com/notifications?query=repo%3Aeval%2Fbbangsearch+{{s|urlescape}}"}
   "myotherbang"   {:desc "My Project PRs"
                    :tpl  "https://github.com/pulls?q=is%3Apr+archived%3Afalse+repo%3Aeval%2Fbbangsearch+sort%3Aupdated-desc+is%3Aopen+{{s|urlescape}}"}
 }
 ```
 
-Custom bangs take precedence over existing bangs.
+The templating system used is [Selmer](https://github.com/yogthos/Selmer/). `s` will be set to whatever is searched for, e.g. `some "exact sentence"` when executing `bbang mybang some "exact sentence"`.
+Custom bangs take precedence over built-in bangs. This e.g. allows for overriding defunct bangs.
+
+Using Selmer's tags you can do nifty things:
+```clojure
+{
+  "mybang"          {:desc "Some bang"
+                     :tpl "{% if s|empty? %}https://example.org/all{% else %}https://example.org/search?q={{s|urlescape}}{% endif %}"}
+  "project/tickets" {:desc "Visit/search tickets"
+                     :tpl "{% ifmatches #\"^PROJ-\" s %}https://tickets.com/show/{{s}}{% else %}https://tickets.com/search?q={{s|urlescape}}{% endifmatches %}"}
+}
+```
+The first example shows how to distinguish between executing `bbang mybang` and `bbang mybang some query` using Selmer's [if-tag](https://github.com/yogthos/Selmer/#if).
+The second example shows how to distinguish between jumping to a known ticket (e.g. `PROJ-123`) and doing a search. It uses the bbang-specific `ifmatches`-tag.
 
 ## License
 
