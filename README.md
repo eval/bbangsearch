@@ -7,11 +7,11 @@ A CLI for [DuckDuckGo's bang❗ searches](https://duckduckgo.com/bangs) written 
 I think bang searches are really great. Having DDG as my default search-engine, it's often easier to just type `!gh project` in the address bar than to cycle through open browser tabs to find the page of said GitHub project.
 
 I found there's also some shortcomings:
-- I often wish there would be a 'feeling lucky'-mode
-  often there's no need to search, but just jump to the first result.
+- I miss a 'feeling lucky'-mode  
+  often there's no need to consider all results, just the first result.
 - some bangs are no longer working
-- option to add custom bangs
-- easy access when working in the terminal
+- no option to add custom bangs
+- they only work in the browser
 
 Enter `bbang`:
 * open (or get the url of) any of the ~14k bang search pages via the commandline
@@ -19,7 +19,8 @@ Enter `bbang`:
 * list all bangs (in an easily grep-able format)
 * allow for 'jump-to' functionality
 
-Some examples:
+### examples
+
 ```shell
 # search all tickets (using a custom bang)
 $ bbang proj/tickets some term
@@ -122,43 +123,48 @@ There's also a couple of additional bangs:
 | `@gem` | Jump to gem on rubygems.org |
 | `ghrepo` | Visit/search repo on GitHub (see doc below) |
 
-#### `ghrepo`
+#### ghrepo
 
-This bang distinguishes between visiting and searching a GitHub repo:
+This bang deserves it's own paragraph as it's quite powerful.  
+
+In its simplest form it allows for visiting/searching a GitHub repository you pass it:
 ```shell
-# visit repository
-$ bbang ghrepo eval/deps-try
+# visit
+$ bbang ghrepo eval/bbangsearch
 
-# search repository
-$ bbang ghrepo eval/deps-try some term
+# search
+$ bbang ghrepo eval/bbangsearch some issue
 ```
 
-It also has some implied defaults.
-When in a working directory that has a git remote pointing to GitHub[^1], you can visit or search the project:
+It also has some implied defaults.  
+E.g. with the right settings, you can leave out the GitHub organization and only provide a project-name:
 ```shell
-# open GitHub project page
-$ bbang ghrepo
-# open GitHub search scoped to the current repository
-$ bbang ghrepo _ some term
+# visit
+$ bbang ghrepo bbangsearch
+
+# search
+$ bbang ghrepo bbangsearch some issue
 ```
 
-[^1]: remotes with urls of the form `git@github.com:org/project.git` take precedence over urls like `https://github.com/org/project.git`
-
-With some extra settings you can also leave out the GitHub organisation:
-```shell
-# the GitHub org `eval` is implied
-$ bbang ghrepo deps-try
-```
-
-Set the github-org like this (in order of precedence):
-* set env-var `BBANG_GITHUB_ORG`
-* set env-var `GITHUB_ORG`
-* git setting `github.org`
+bbang derives the GitHub organization from the following settings (in order of precedence):
+* env-var `BBANG_GITHUB_ORG`
+* env-var `GITHUB_ORG`
+* git setting `github.org`  
   `$ git config --global github.org mycom`  (leave out `--global` to set it for the current repos).
 * set env-var `BBANG_GITHUB_USER`
 * set env-var `GITHUB_USER`
-* git setting `github.user`
+* git setting `github.user`  
   `$ git config --global github.user eval` (leave out `--global` to set it for the current repos).
+
+Finally, when in a git working directory that has a remote pointing to GitHub[^1], you neither need to provide org or project:
+```
+# visit
+$ bbang ghrepo
+
+# search
+$ bbang ghrepo _ some issue
+```
+[^1]: in order of preference: the origin-url, any remote with an ssh-url
 
 ### Add custom ❗ searches
 
@@ -174,7 +180,7 @@ Example:
 ```
 
 The templating system used is [Selmer](https://github.com/yogthos/Selmer/). `s` will be set to whatever is searched for, e.g. `some "exact sentence"` when executing `bbang mybang some "exact sentence"`.
-Custom bangs take precedence over existing bangs. This e.g. allows for overriding defunct bangs.
+Custom bangs take precedence over built-in bangs. This e.g. allows for overriding defunct bangs.
 
 Using Selmer's tags you can do nifty things:
 ```clojure
