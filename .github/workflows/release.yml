@@ -76,6 +76,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body: |
+            ## Info
+
             - version: ${{ needs.Config.outputs.version }}
             - SHA: ${{ github.sha }}
             - Run with babashka: `bb bbang-bb.jar`
@@ -91,6 +93,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body: |
+            ## Info
+
             - version: ${{ needs.Config.outputs.version }}
             - SHA: ${{ github.sha }}
             - Run with babashka: `bb bbang-bb.jar`
@@ -106,6 +110,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body: |
+            ## Info
+
             - version: ${{ needs.Config.outputs.version }}
             - SHA: ${{ github.sha }}
             - Run with babashka: `bb bbang-bb.jar`
