@@ -125,7 +125,7 @@
                       (or
                        (nil? org&project)
                        (= org&project "_"))            (or (current-github-org&project)
-                                                           (throw-ex "Can't establish the github-url of this project. Is there a git remote pointing to github?"))
+                                                           (throw-ex "Can't establish the github-url of this project. Is there a git remote pointing to GitHub?"))
                       (string/index-of org&project \/) org&project
                       :else
                       (if-let [org (github-org)]
