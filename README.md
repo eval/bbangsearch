@@ -57,10 +57,6 @@ $ brew install --head eval/brew/bbang
 $ brew update && brew reinstall bbang
 ```
 
-### standalone
-
-TBD
-
 ### bbin
 
 [bbin](https://github.com/babashka/bbin) allows for easy installation of Babashka scripts.
@@ -78,9 +74,34 @@ $ bbang -h
 $ bbin install io.github.eval/bbangsearch --as b
 ```
 
-## Usage
+### manual (Windows, Linux and macOS)
 
-### ❗
+#### Prerequisites
+
+* Install [babashka](https://github.com/babashka/babashka#installation)
+
+Verify that the following commands work:
+
+``` bash
+$ bb --version
+babashka v1.3.186
+```
+
+#### Installation
+
+* Download [the latest stable bb-jar](https://github.com/eval/bbangsearch/releases/tag/stable).
+* Put an executable wrapper-script on $PATH. For example (for Linux and macOS):
+```bash
+#!/usr/bin/env sh
+
+exec bb /absolute/path/to/bbang-bb.jar "$@"
+```
+
+### standalone
+
+TBD
+
+## Usage
 
 ```shell
 # search GitHub
@@ -91,9 +112,12 @@ $ bbang g
 
 # just the url
 $ bbang gh bbangsearch --url
+
+# help
+$ bbang -h
 ```
 
-### What ❗?
+### Show me the ❗s
 
 All roughly 14k bang searches from DuckDuckGo are included.
 
@@ -166,7 +190,7 @@ $ bbang ghrepo _ some issue
 ```
 [^1]: in order of preference: the origin-url, any remote with an ssh-url
 
-### Add custom ❗ searches
+### Add custom ❗s
 
 Custom bangs will be read from `~/.config/bbang/bangs.edn` (or `$XDG_CONFIG_HOME/bbang/bangs.edn`).
 Example:
