@@ -58,18 +58,18 @@
    (github-user)))
 
 (defn- current-github-remote-url []
-  (let [ssh-url?        (comp #(re-find #"^git@github" %) :url)
-        github-url?     (comp #(re-find #"github\.com" %) :url)
-        origin?         (comp #(= % "origin") :name)
-        origin&ssh-url? (every-pred origin? ssh-url?)
-        remote->url     #(git "remote" "get-url" %)
-        remotes         (map #(assoc {} :name % :url (remote->url %))
-                             (string/split-lines (git "remote")))]
-    (some->> remotes
-             (filter github-url?)
-             (filter (some-fn origin&ssh-url? ssh-url? origin?))
-             first
-             :url)))
+  (let [ssh-url?       (comp #(re-find #"^git@github" %) :url)
+        github-url?    (comp #(re-find #"github\.com" %) :url)
+        origin?        (comp #(= % "origin") :name)
+        remote->url    #(git "remote" "get-url" %)
+        remotes        (map #(assoc {} :name % :url (remote->url %))
+                            (string/split-lines (git "remote")))
+        github-remotes (filter github-url? remotes)]
+    (some-> (concat (filter origin? github-remotes)
+                    (filter ssh-url? github-remotes)
+                    github-remotes)
+            first
+            :url)))
 
 (defn- current-github-org&project []
   (some->> (current-github-remote-url) (re-find #"[:/]([^.]+)\.git$") second))
@@ -130,7 +130,7 @@
                       :else
                       (if-let [org (github-org)]
                         (str org "/" org&project)
-                        (throw-ex "Can't establish github-org. See https://github.com/search?q=repo%3Aeval%2Fbbangsearch%20%22set+github-org%22&type=code")))]
+                        (throw-ex "Can't establish github-org. Setup via https://github.com/eval/bbangsearch#ghrepo.")))]
     (cond-> {:org&project org&project}
       (seq terms) (assoc :s (quote-bang-args terms)))))
 
