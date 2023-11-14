@@ -116,23 +116,32 @@
                         (pr-str term)
                         term)) bang-args)))
 
+(defn- gh-arg->org&project-var
+  "Turns argument for e.g. `ghrepo` into org&project.
+  Example `org&project`: nil, \"_\", \"repo\" or \"org/repo\" "
+  [org&project]
+  (cond
+    (or
+     (nil? org&project)
+     (= org&project "_"))            (or (current-github-org&project)
+                                         (throw-ex "Can't establish the github-url of this project. Is there a git remote pointing to GitHub?"))
+    (string/index-of org&project \/) org&project
+    :else
+    (if-let [org (github-org)]
+      (str org "/" org&project)
+      (throw-ex "Can't establish github-org. Setup via https://github.com/eval/bbangsearch#ghrepo."))))
+
 (defn- bang-vars-dispatch [bang _bang-args] bang)
 
 (defmulti bang-vars #'bang-vars-dispatch)
 
 (defmethod bang-vars "ghrepo" [_bang [org&project & terms]]
-  (let [org&project (cond
-                      (or
-                       (nil? org&project)
-                       (= org&project "_"))            (or (current-github-org&project)
-                                                           (throw-ex "Can't establish the github-url of this project. Is there a git remote pointing to GitHub?"))
-                      (string/index-of org&project \/) org&project
-                      :else
-                      (if-let [org (github-org)]
-                        (str org "/" org&project)
-                        (throw-ex "Can't establish github-org. Setup via https://github.com/eval/bbangsearch#ghrepo.")))]
-    (cond-> {:org&project org&project}
-      (seq terms) (assoc :s (quote-bang-args terms)))))
+  (cond-> {:org&project (gh-arg->org&project-var org&project)}
+    (seq terms) (assoc :s (quote-bang-args terms))))
+
+(defmethod bang-vars "ghrel" [_bang [org&project & terms]]
+  (cond-> {:org&project (gh-arg->org&project-var org&project)}
+    (seq terms) (assoc :s (quote-bang-args terms))))
 
 (defmethod bang-vars :default [_bang bang-args]
   {:s (quote-bang-args bang-args)})
@@ -168,6 +177,7 @@ A CLI for DuckDuckGo's bang searches written in Babashka.
                   (util/bold "COMMANDS" {}) "
   bangs:ls  List all bangs (or via `bbang bangs [& terms]`)
 ")))
+
 
 (defn -main [& args]
   (try

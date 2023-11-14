@@ -71,6 +71,16 @@ jobs:
         run: bb uberjar bbang-bb.jar -m bbangsearch.main
       - name: Testrun uberjar
         run: bb bbang-bb.jar -v
+      - name: Build Linux self-contained
+        run: |
+          curl -sLO https://github.com/babashka/babashka-dev-builds/releases/download/v1.3.186/babashka-1.3.186-linux-amd64-static.tar.gz
+          tar xzvf babashka-1.3.186-linux-amd64-static.tar.gz
+          cat ./bb bbang-bb.jar > bbang-linux-amd64-standalone
+      - name: Build Mac self-contained
+        run: |
+          curl -sLO https://github.com/babashka/babashka-dev-builds/releases/download/v1.3.186/babashka-1.3.186-macos-aarch64.tar.gz
+          tar xzvf babashka-1.3.186-macos-aarch64.tar.gz
+          cat ./bb bbang-bb.jar > bbang-mac-aarch64-standalone
       - name: Release stable
         if: "${{ needs.Config.outputs.stable }}"
         uses: softprops/action-gh-release@v1
@@ -88,6 +98,8 @@ jobs:
           files: |
             bbang-bb.jar
             bbang.zip
+            bbang-linux-amd64-standalone
+            bbang-mac-aarch64-standalone
       - name: Release unstable
         if: ${{ always() }}
         uses: softprops/action-gh-release@v1
@@ -105,6 +117,8 @@ jobs:
           files: |
             bbang-bb.jar
             bbang.zip
+            bbang-linux-amd64-standalone
+            bbang-mac-aarch64-standalone
       - name: Tagged release
         if: "${{ needs.Config.outputs.tagged-release }}"
         uses: softprops/action-gh-release@v1
@@ -122,3 +136,5 @@ jobs:
           files: |
             bbang-bb.jar
             bbang.zip
+            bbang-linux-amd64-standalone
+            bbang-mac-aarch64-standalone

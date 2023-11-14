@@ -38,14 +38,20 @@
                     :tpl  "https://grep.app/search?q={{s|urlescape}}"}
        "grepclj"   {:desc "Grep.app Clojure code"
                     :tpl  "https://grep.app/search?q={{s|urlescape}}&filter[lang][0]=Clojure"}
-       "rdoc"      {:desc "rubydoc.info, gems only" ;; fixes default
-                    :tpl  "https://www.rubydoc.info/find/gems?q={{s|urlescape}}"}
+       "rdoc"      {:desc "rubydoc.info, gems only (jump-to: @gem)" ;; fixes default
+                    :tpl  "{% ifmatches #\"^@\" s %}https://www.rubydoc.info/gems/{{s|drop:1|join}}{% else %}https://www.rubydoc.info/find/gems?q={{s|urlescape}}{% endifmatches %}"}
        "@rdoc"     {:dec "Jump to gem on rubydoc.info"
                     :tpl "https://www.rubydoc.info/gems/{{s}}"}
        "@gem"      {:desc "Jump to gem on rubygems.org"
                     :tpl  "https://rubygems.org/gems/{{s}}"}
+       "gem"       {:desc "RubyGems (jump-to: @gem)"
+                    :tpl  "{% ifmatches #\"^@\" s %}https://rubygems.org/gems/{{s|drop:1|join}}{% else %}https://rubygems.org/search?utf8=%E2%9C%93&query={{s|urlescape}}{% endifmatches %}"}
        "ghrepo"    {:desc "Search/visit repo from working dir. See README."
                     :tpl  "{% if s|empty? %}https://github.com/{{org&project}}{% else %}https://github.com/search?q=repo%3A{{org&project|urlescape}}%20{{s|urlescape}}&type=code{% endif %}"}
+       "ghdbf"     {:desc "GitHub dashboard feed"
+                    :tpl  "https://github.com/dashboard-feed"}
+       "ghrel"     {:desc "GitHub releases"
+                    :tpl  "{% if s|empty? %}https://github.com/{{org&project}}/releases{% else %}https://github.com/{{org&project}}/releases?q={{s|urlescape}}&expanded=true{% endif %}"}
        "tldrlegal" {:desc "TL;DR Legal" ;; fixes default
                     :tpl  "https://www.tldrlegal.com/search?query={{s|urlescape}}"}}
       (update-vals ensure-domain)))
