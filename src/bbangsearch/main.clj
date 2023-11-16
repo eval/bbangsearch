@@ -1,6 +1,5 @@
 (ns bbangsearch.main
   (:require [babashka.cli :as cli]
-            [babashka.fs :as fs]
             [bbangsearch.bangs :as bangs]
             [bbangsearch.util :as util]
             [clojure.java.browse :refer [browse-url]]
@@ -76,7 +75,7 @@
         bin     (if dev? "bbang-dev" "bbang")
         version (string/trim
                  (if dev?
-                   (when-first [git-dir (keep #(util/file-exists?-> (fs/file % ".git")) (util/traverse-up current-file))]
+                   (when-first [git-dir (keep #(util/file-exists?-> % ".git") (util/traverse-up current-file))]
                      (util/git "--git-dir" (str git-dir) "describe" "--tags"))
                    (slurp (io/resource "VERSION"))))]
     (str bin " " version)))

@@ -13,13 +13,13 @@
   (fs/create-dirs path))
 
 (defn when-pred
-  ([pred]
-   (partial when-pred pred))
-  ([pred val]
-   (when (pred val) val)))
+  "Examples:
+  (when-pred even? 2) ;; => 2"
+  [pred val]
+  (when (pred val) val))
 
-(defn file-exists?-> [file]
-  (when-pred fs/exists? file))
+(defn file-exists?-> [& fs]
+  (when-pred fs/exists? (apply fs/file fs)))
 
 (defn git [& args]
   (some-> (apply p/process "git" args) :out slurp string/trimr))
