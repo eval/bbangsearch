@@ -1,7 +1,6 @@
 (ns bbangsearch.main
   (:require [babashka.cli :as cli]
             [babashka.fs :as fs]
-            [babashka.process :refer [process]]
             [bbangsearch.bangs :as bangs]
             [bbangsearch.util :as util]
             [clojure.java.browse :refer [browse-url]]
@@ -43,28 +42,25 @@
 
 (def ^:private  current-file *file*)
 
-(defn- git [& args]
-  (some-> (apply process "git" args) :out slurp string/trimr))
-
 (defn- github-user []
   (or (System/getenv "BBANG_GITHUB_USER")
       (System/getenv "GITHUB_USER")
-      (not-empty (git "config" "--get" "github.user"))))
+      (not-empty (util/git "config" "--get" "github.user"))))
 
 (defn- github-org []
   (or
    (System/getenv "BBANG_GITHUB_ORG")
    (System/getenv "GITHUB_ORG")
-   (not-empty (git "config" "--get" "github.org"))
+   (not-empty (util/git "config" "--get" "github.org"))
    (github-user)))
 
 (defn- current-github-remote-url []
   (let [ssh-url?       (comp #(re-find #"^git@github" %) :url)
         github-url?    (comp #(re-find #"github\.com" %) :url)
         origin?        (comp #(= % "origin") :name)
-        remote->url    #(git "remote" "get-url" %)
+        remote->url    #(util/git "remote" "get-url" %)
         remotes        (map #(assoc {} :name % :url (remote->url %))
-                            (string/split-lines (git "remote")))
+                            (string/split-lines (util/git "remote")))
         github-remotes (filter github-url? remotes)]
     (some-> (concat (filter origin? github-remotes)
                     (filter ssh-url? github-remotes)
@@ -81,7 +77,7 @@
         version (string/trim
                  (if dev?
                    (when-first [git-dir (keep #(util/file-exists?-> (fs/file % ".git")) (util/traverse-up current-file))]
-                     (git "--git-dir" (str git-dir) "describe" "--tags"))
+                     (util/git "--git-dir" (str git-dir) "describe" "--tags"))
                    (slurp (io/resource "VERSION"))))]
     (str bin " " version)))
 

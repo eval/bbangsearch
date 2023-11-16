@@ -21,6 +21,9 @@
 (defn file-exists?-> [file]
   (when-pred fs/exists? file))
 
+(defn git [& args]
+  (some-> (apply p/process "git" args) :out slurp string/trimr))
+
 (defn is-tty
   [fd key]
   (-> ["test" "-t" (str fd)]
