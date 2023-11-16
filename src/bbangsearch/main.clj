@@ -1,5 +1,6 @@
 (ns bbangsearch.main
   (:require [babashka.cli :as cli]
+            [babashka.fs :as fs]
             [babashka.process :refer [process]]
             [bbangsearch.bangs :as bangs]
             [bbangsearch.util :as util]
@@ -79,7 +80,7 @@
         bin     (if dev? "bbang-dev" "bbang")
         version (string/trim
                  (if dev?
-                   (let [git-dir (util/find-up ".git" current-file)]
+                   (when-first [git-dir (keep #(util/file-exists?-> (fs/file % ".git")) (util/traverse-up current-file))]
                      (git "--git-dir" (str git-dir) "describe" "--tags"))
                    (slurp (io/resource "VERSION"))))]
     (str bin " " version)))
