@@ -237,8 +237,6 @@ Examples:
 {
   "mybang"        {:desc "My Project notifications"
                    :tpl  "https://github.com/notifications?query=repo%3Aeval%2Fbbangsearch+{{s|urlescape}}"}
-  "java"   {:desc "Overriding java"
-            :tpl  "https://github.com/pulls?q=is%3Apr+archived%3Afalse+repo%3Aeval%2Fbbangsearch+sort%3Aupdated-desc+is%3Aopen+{{s|urlescape}}"}
 }
 ```
 
