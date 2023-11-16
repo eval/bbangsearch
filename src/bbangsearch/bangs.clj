@@ -30,40 +30,63 @@
   (load-edn (io/resource "bangs.edn")))
 
 (defn additional []
-  (-> {"ghclj"     {:desc "GitHub Clojure projects"
-                    :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=repositories&l=Clojure"}
-       "ghcclj"    {:desc "GitHub Clojure code"
-                    :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=code"}
-       "grep"      {:desc "Grep.app"
-                    :tpl  "https://grep.app/search?q={{s|urlescape}}"}
-       "grepclj"   {:desc "Grep.app Clojure code"
-                    :tpl  "https://grep.app/search?q={{s|urlescape}}&filter[lang][0]=Clojure"}
-       "rdoc"      {:desc "rubydoc.info, gems only (jump-to: @gem)" ;; fixes default
-                    :tpl  "{% ifmatches #\"^@\" s %}https://www.rubydoc.info/gems/{{s|drop:1|join}}{% else %}https://www.rubydoc.info/find/gems?q={{s|urlescape}}{% endifmatches %}"}
-       "@rdoc"     {:dec "Jump to gem on rubydoc.info"
-                    :tpl "https://www.rubydoc.info/gems/{{s}}"}
-       "@gem"      {:desc "Jump to gem on rubygems.org"
-                    :tpl  "https://rubygems.org/gems/{{s}}"}
-       "gem"       {:desc "RubyGems (jump-to: @gem)"
-                    :tpl  "{% ifmatches #\"^@\" s %}https://rubygems.org/gems/{{s|drop:1|join}}{% else %}https://rubygems.org/search?utf8=%E2%9C%93&query={{s|urlescape}}{% endifmatches %}"}
-       "ghrepo"    {:desc "Search/visit repo from working dir. See README."
-                    :tpl  "{% if s|empty? %}https://github.com/{{org&project}}{% else %}https://github.com/search?q=repo%3A{{org&project|urlescape}}%20{{s|urlescape}}&type=code{% endif %}"}
-       "ghdbf"     {:desc "GitHub dashboard feed"
-                    :tpl  "https://github.com/dashboard-feed"}
-       "ghrel"     {:desc "GitHub releases"
-                    :tpl  "{% if s|empty? %}https://github.com/{{org&project}}/releases{% else %}https://github.com/{{org&project}}/releases?q={{s|urlescape}}&expanded=true{% endif %}"}
-       "tldrlegal" {:desc "TL;DR Legal" ;; fixes default
-                    :tpl  "https://www.tldrlegal.com/search?query={{s|urlescape}}"}}
-      (update-vals ensure-domain)))
+  {"cljdoc"    {:aliases ["cljd"]}
+   "ghclj"     {:desc "GitHub Clojure projects"
+                :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=repositories&l=Clojure"}
+   "ghcclj"    {:desc "GitHub Clojure code"
+                :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=code"}
+   "grep"      {:desc "Grep.app"
+                :tpl  "https://grep.app/search?q={{s|urlescape}}"}
+   "grepclj"   {:desc "Grep.app Clojure code"
+                :tpl  "https://grep.app/search?q={{s|urlescape}}&filter[lang][0]=Clojure"}
+   "rdoc"      {:desc "rubydoc.info, gems only (jump-to: @gem)" ;; fixes default
+                :tpl  "{% ifmatches #\"^@\" s %}https://www.rubydoc.info/gems/{{s|drop:1|join}}{% else %}https://www.rubydoc.info/find/gems?q={{s|urlescape}}{% endifmatches %}"}
+   "@rdoc"     {:dec "Jump to gem on rubydoc.info"
+                :tpl "https://www.rubydoc.info/gems/{{s}}"}
+   "@gem"      {:desc "Jump to gem on rubygems.org"
+                :tpl  "https://rubygems.org/gems/{{s}}"}
+   "gem"       {:desc "RubyGems (jump-to: @gem)"
+                :tpl  "{% ifmatches #\"^@\" s %}https://rubygems.org/gems/{{s|drop:1|join}}{% else %}https://rubygems.org/search?utf8=%E2%9C%93&query={{s|urlescape}}{% endifmatches %}"}
+   "ghrepo"    {:desc "Search/visit repo from working dir. See README."
+                :tpl  "{% if s|empty? %}https://github.com/{{org&project}}{% else %}https://github.com/search?q=repo%3A{{org&project|urlescape}}%20{{s|urlescape}}&type=code{% endif %}"}
+   "ghdbf"     {:desc "GitHub dashboard feed"
+                :tpl  "https://github.com/dashboard-feed"}
+   "ghrel"     {:desc "GitHub releases"
+                :tpl  "{% if s|empty? %}https://github.com/{{org&project}}/releases{% else %}https://github.com/{{org&project}}/releases?q={{s|urlescape}}&expanded=true{% endif %}"}
+   "tldrlegal" {:desc "TL;DR Legal" ;; fixes default
+                :tpl  "https://www.tldrlegal.com/search?query={{s|urlescape}}"}
+   "drtv"      {:desc "DR TV"
+                :tpl  "https://www.dr.dk/drtv/soeg?q={{s|urlescape}}"}
+   "drdk"      {:desc "Danmark Radio"
+                :tpl  "https://www.dr.dk/soeg?query={{s|urlescape}}&sort=Relevance"}
+   "java19"    {:desc "Java19 docs"
+                :tpl  "https://docs.oracle.com/en/java/javase/19/docs/api/search.html?q={{s|urlescape}}"}
+   "java20"    {:desc "Java20 docs"
+                :tpl  "https://docs.oracle.com/en/java/javase/20/docs/api/search.html?q={{s|urlescape}}"}
+   "java21"    {:desc    "Java21 docs"
+                :aliases ["java"]
+                :tpl     "https://docs.oracle.com/en/java/javase/21/docs/api/search.html?q={{s|urlescape}}"}
+   "pgdoc14"   {:desc "Postgresql docs (v14)"
+                :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2F14%2F&q={{s|urlescape}}"}
+   "pgdoc15"   {:desc "Postgresql docs (v15)"
+                :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2F15%2F&q={{s|urlescape}}"}
+   "pgdoc16"   {:desc "Postgresql docs (v16)"
+                :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2F16%2F&q={{s|urlescape}}"}
+   "pgdoc"     {:desc "Postgresql docs (current version)"
+                :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q={{s|urlescape}}"}})
+
 
 (defn user []
   (util/ensure-path-exists! @config-home)
   (when-let [bangs-edn (util/when-pred fs/exists? (fs/file @config-home "bangs.edn"))]
-    (update-vals (load-edn bangs-edn)
-                 ensure-domain)))
+    (load-edn bangs-edn)))
 
 (defn all []
-  (merge (default) (additional) (user)))
+  (let [all                (merge-with merge (default) (additional) (user))
+        bangs-with-aliases (filter (comp :aliases val) all)]
+    (update-vals (reduce (fn [acc [bang {:keys [aliases]}]]
+                           (into acc (map vector aliases (repeat (get acc bang))))) all bangs-with-aliases)
+                 ensure-domain)))
 
 (defn find [bang]
   (get (all) bang))
