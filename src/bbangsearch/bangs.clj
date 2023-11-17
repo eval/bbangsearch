@@ -26,10 +26,10 @@
    (let [bang->domain #(some->> % :tpl (re-find #"https?:\/\/([^/]+)") second)]
      (assoc bang :domain (or domain (bang->domain bang))))))
 
-(defn default []
+(defn ddg-bangs []
   (load-edn (io/resource "bangs.edn")))
 
-(defn additional []
+(def additional-bangs
   {"cljdoc"    {:aliases ["cljd"]}
    "ghclj"     {:desc "GitHub Clojure projects"
                 :tpl  "https://github.com/search?utf8=%E2%9C%93&q={{s|urlescape}}+language%3AClojure&type=repositories&l=Clojure"}
@@ -75,23 +75,62 @@
    "pgdoc"     {:desc "Postgresql docs (current version)"
                 :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q={{s|urlescape}}"}})
 
+(defn built-in-bangs []
+  (merge-with merge (ddg-bangs) additional-bangs))
 
-(defn user []
+(defn- extract-aliases [m]
+  (reduce (fn [acc [k {:keys [aliases]}]]
+            (into acc (map vector aliases (repeat k))))
+          {}
+          (filter (comp :aliases val) m)))
+
+(defn user-config-bangs []
   (util/ensure-path-exists! @config-home)
   (when-let [bangs-edn (util/when-pred fs/exists? (fs/file @config-home "bangs.edn"))]
     (load-edn bangs-edn)))
 
+(defn folder-bang-maps []
+  (let [files (keep #(util/file-exists?-> % "bangs.edn") (util/traverse-up))]
+    (map load-edn (reverse files))))
+
+(defn user-bang-maps
+  "All bang maps from user, least important first, e.g. '(user-config home-folder project-folder)"
+  []
+  (filter map? (conj (folder-bang-maps) (user-config-bangs))))
+
+(defn alias->bang-name
+  "Turn bang maps into one alias map"
+  [ms]
+  (reduce merge (map extract-aliases ms)))
+
 (defn all []
-  (let [all                (merge-with merge (default) (additional) (user))
-        bangs-with-aliases (filter (comp :aliases val) all)]
-    (update-vals (reduce (fn [acc [bang {:keys [aliases]}]]
-                           (into acc (map vector aliases (repeat (get acc bang))))) all bangs-with-aliases)
-                 ensure-domain)))
+  (let [bang-maps    (conj (user-bang-maps) (built-in-bangs))
+        aliases      (alias->bang-name bang-maps)
+        ;; e.g. a 'prio-alias' is "rails" in {"rails" "project/rails" "r" "rails"}
+        ;; or else "r" would point to the standard rails and not the project rails
+        prio-aliases (set (filter (set (keys aliases)) (vals aliases)))
+        aliases      (into (filterv (comp prio-aliases key) aliases) aliases)
+        result       (apply merge-with merge bang-maps)]
+    (reduce (fn [acc [al bang]]
+              ;; TODO bang might not contain tpl, e.g. {"not-existing" {:aliases ["something-new"]}}
+              (assoc acc al (get acc bang))) result aliases)))
 
 (defn find [bang]
   (get (all) bang))
 
 (comment
+  (find "moar")
+
+  (set (filter (comp #{"foo"} key) {"foo" :1 "bar" :2}))
+  (let [aliases {"rails" "project/rails" "r" "rails"}
+        prio-aliases (set (filter (set (keys aliases)) (vals aliases)))]
+    (into (filterv (comp prio-aliases key) aliases) aliases))
+
+  ((fn fuzzy-find [s]
+     (let [fuzzy-re  (re-pattern (apply str "^" (interpose ".*" s)))]
+       (if-let [result (get (all) s)]
+         result
+         (filter #(re-find fuzzy-re %) (keys (all)))))) "cljd")
 
   (let [bangs-sans-urlescape #{"ghrepo"}
         bangs-to-remove      #{"web1913"}

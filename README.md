@@ -229,19 +229,36 @@ $ bbang ghrepo _ some issue
 ```
 [^1]: in order of preference: the origin-url, any remote with an ssh-url
 
-### Custom ❗s
+### customizations
 
-Custom bangs will be read from `~/.config/bbang/bangs.edn` (or `$XDG_CONFIG_HOME/bbang/bangs.edn`).  
-Examples:
+Custom/overriding bangs are defined in files named `bangs.edn` in the following places:
+- user-config  
+  `~/.config/bbang/bangs.edn` (or `$XDG_CONFIG_HOME/bbang/bangs.edn`)
+- current working directory (or direct ancestors)
+
+So when executing `bbang` from a project-folder (`~/projects/foo`), all bangs from the following places are merged (last one wins):
+- built-in
+- user-config `bangs.edn`
+- `bangs.edn` in any folder starting at `/`, down to `~/projects/foo`
+
+#### example
+
+Here's an example `bangs.edn` that exists in a project-folder:
 ```clojure
+;; ~/projects/foo/bangs.edn
 {
-  "mybang"        {:desc "My Project notifications"
-                   :tpl  "https://github.com/notifications?query=repo%3Aeval%2Fbbangsearch+{{s|urlescape}}"}
+  "project/rails" {:desc "Rails API"
+                   :tpl  "https://api.rubyonrails.org/v6.1.7.6?q={{s|urlescape}}"
+                   :aliases ["rails"]}
 }
 ```
 
-The templating system used is [Selmer](https://github.com/yogthos/Selmer/). `s` will be set to whatever is searched for, e.g. `some "exact sentence"` when executing `bbang mybang some "exact sentence"`.
-Custom bangs take precedence over built-in bangs. This e.g. allows for overriding defunct bangs.
+It's defined in the EDN-format (which is like JSON if you squint a bit).  
+A bang has a name (i.e. `project/rails`) and a map with a description (`:desc`), a template (`:tpl`) and (optionally) aliases.  
+
+As you have guessed, the template is what ultimately yields the url. The templating system used is [Selmer](https://github.com/yogthos/Selmer/). Whatever you search for is urlescaped and appended to the `q=` in this example. So `bbang project/rails some query` will open url `https://api.rubyonrails.org/v6.1.7.6?q=some+query`.
+
+The aliases ensure that the same bang definition is used when searching with one of the aliases. In this case we override the existing `rails` bang (pointing to the API docs of the current version of Rails) - so we don't really need to learn a new bang-name and can use what we normally would use to search Rails API-docs.
 
 Using Selmer's tags you can do nifty things:
 ```clojure
@@ -253,8 +270,8 @@ Using Selmer's tags you can do nifty things:
   "java19"          {:aliases ["java"]}}
 }
 ```
-The first example shows how to distinguish between executing `bbang mybang` and `bbang mybang some query` using Selmer's [if-tag](https://github.com/yogthos/Selmer/#if).
-The second example shows how to distinguish between jumping to a known ticket (e.g. `PROJ-123`) and doing a search. It uses the bbang-specific `ifmatches`-tag.  
+The first example shows how to distinguish between merely visiting a resource (i.e. `bbang mybang`) and doing a search (e.g. `bbang mybang some query`) using Selmer's [if-tag](https://github.com/yogthos/Selmer/#if).  
+The second example shows how to distinguish between jumping to a known ticket (e.g. `bbang project/tickets PROJ-123`) and doing a search. It uses the bbang-specific `ifmatches`-tag.  
 The last example shows how to alias an existing bang. Both `java19` and `java` exist (resp. search java docs v19 and (currently) v21). This alias ensures that `java` is equivalent to `java19`.
 
 ## License
