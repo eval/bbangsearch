@@ -19,7 +19,7 @@ Enter `bbang`:
 * list all bangs (in an easily grep-able format)
 * allow for 'jump-to' functionality
 
-### examples
+### Examples
 
 ```shell
 # I. Use any of the regular DDG bangs (opens default browser),
@@ -229,19 +229,19 @@ $ bbang ghrepo _ some issue
 ```
 [^1]: in order of preference: the origin-url, any remote with an ssh-url
 
-### customizations
+### Customizations
 
 Custom/overriding bangs are defined in files named `bangs.edn` in the following places:
 - user-config  
   `~/.config/bbang/bangs.edn` (or `$XDG_CONFIG_HOME/bbang/bangs.edn`)
-- current working directory (or direct ancestors)
+- current working directory and its direct ancestors
 
-So when executing `bbang` from a project-folder (`~/projects/foo`), all bangs from the following places are merged (last one wins):
+So when executing `bbang` from a project-folder (`~/projects/foo`), all bangs from the following places are (deep-)merged (last one wins):
 - built-in
-- user-config `bangs.edn`
+- user-config
 - `bangs.edn` in any folder starting at `/`, down to `~/projects/foo`
 
-#### example
+#### Example
 
 Here's an example `bangs.edn` that exists in a project-folder:
 ```clojure
@@ -254,11 +254,11 @@ Here's an example `bangs.edn` that exists in a project-folder:
 ```
 
 It's defined in the EDN-format (which is like JSON if you squint a bit).  
-A bang has a name (i.e. `project/rails`) and a map with a description (`:desc`), a template (`:tpl`) and (optionally) aliases.  
+A bang has a name (i.e. `project/rails`) and a map (`{,,,}`) containing a description (`:desc`), a template (`:tpl`) and (optionally) aliases.  
 
-As you have guessed, the template is what ultimately yields the url. The templating system used is [Selmer](https://github.com/yogthos/Selmer/). Whatever you search for is urlescaped and appended to the `q=` in this example. So `bbang project/rails some query` will open url `https://api.rubyonrails.org/v6.1.7.6?q=some+query`.
+As you have guessed, the template is what ultimately yields the url. The templating system used is [Selmer](https://github.com/yogthos/Selmer/). Whatever you search for is escaped and appended to the `q=` in this example. So `bbang project/rails some query` will open url `https://api.rubyonrails.org/v6.1.7.6?q=some+query` (you can quickly test bangs with the url-flag, e.g. `bbang mybang query --url`).
 
-The aliases ensure that the same bang definition is used when searching with one of the aliases. In this case we override the existing `rails` bang (pointing to the API docs of the current version of Rails) - so we don't really need to learn a new bang-name and can use what we normally would use to search Rails API-docs.
+Aliases make the bang available under shorter (or existing) names. In this case we override the existing `rails` bang (normally pointing to the API docs of the current version of Rails) so whenever we walk into our project we can still keep using `bbang rails some query` and we have the right version API-docs.
 
 Using Selmer's tags you can do nifty things:
 ```clojure
