@@ -90,20 +90,22 @@
   (sort-by :bang (reduce (fn [acc [bang bang-cfg]]
                            (conj acc (assoc bang-cfg :bang bang))) [] bangs)))
 
-(defn- print-bangs [printable-scripts cli-opts]
-  (let [no-color?     (util/no-color? cli-opts)
-        plain-mode?   (util/plain-mode? cli-opts)
-        skip-header?  plain-mode?
-        column-atts   '(:bang :domain :desc)
-        max-width     (when-not plain-mode?
-                        (:cols (util/terminal-dimensions)))
-        desc-truncate #(util/truncate %1 {:truncate-to %2
-                                          :omission    "…"})]
-    (util/print-table column-atts printable-scripts {:skip-header          skip-header?
-                                                     :max-width            max-width
-                                                     :width-reduce-column  :desc
-                                                     :width-reduce-fn      desc-truncate
-                                                     :no-color             no-color?})))
+(defn- print-bangs [bangs cli-opts]
+  (let [no-color?        (util/no-color? cli-opts)
+        plain-mode?      (util/plain-mode? cli-opts)
+        skip-header?     plain-mode?
+        coll-to-sentence #(string/join ", " %)
+        column-atts      '(:bang :aliases :domain :desc)
+        max-width        (when-not plain-mode?
+                           (:cols (util/terminal-dimensions)))
+        desc-truncate    #(util/truncate %1 {:truncate-to %2
+                                             :omission    "…"})]
+    (util/print-table column-atts bangs {:skip-header         skip-header?
+                                         :max-width           max-width
+                                         :column-coercions    {:aliases (comp coll-to-sentence sort)}
+                                         :width-reduce-column :desc
+                                         :width-reduce-fn     desc-truncate
+                                         :no-color            no-color?})))
 
 (defn- quote-bang-args [bang-args]
   (string/join " "

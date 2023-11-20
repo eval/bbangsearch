@@ -83,8 +83,12 @@
                 :tpl     "https://api.rubyonrails.org/v7.1?q={{s|urlescape}}"
                 :aliases ["rails7"]}})
 
+(defn- merge-bang-maps [a b]
+  (let [aliases (into (:aliases a) (:aliases b))]
+    (assoc (merge a b) :aliases aliases)))
+
 (defn built-in-bangs []
-  (merge-with merge (ddg-bangs) additional-bangs))
+  (merge-with merge-bang-maps (ddg-bangs) additional-bangs))
 
 (defn- extract-aliases [m]
   (reduce (fn [acc [k {:keys [aliases]}]]
@@ -112,16 +116,24 @@
   (reduce merge (map extract-aliases ms)))
 
 (defn all []
-  (let [bang-maps    (conj (user-bang-maps) (built-in-bangs))
-        aliases      (alias->bang-name bang-maps)
+  (let [bang-maps      (conj (user-bang-maps) (built-in-bangs))
+        setify-aliases (fn [m] (update-vals m #(update % :aliases set)))
+        bang-maps      (map setify-aliases bang-maps)
+        aliases        (alias->bang-name bang-maps)
         ;; e.g. a 'prio-alias' is "rails" in {"rails" "project/rails" "r" "rails"}
         ;; or else "r" would point to the standard rails and not the project rails
-        prio-aliases (set (filter (set (keys aliases)) (vals aliases)))
-        aliases      (into (filterv (comp prio-aliases key) aliases) aliases)
-        result       (apply merge-with merge bang-maps)]
+        prio-aliases   (set (filter (set (keys aliases)) (vals aliases)))
+        aliases        (into (filterv (comp prio-aliases key) aliases) aliases)
+        result         (apply merge-with merge-bang-maps bang-maps)]
     (reduce (fn [acc [al bang]]
-              ;; TODO bang might not contain tpl, e.g. {"not-existing" {:aliases ["something-new"]}}
-              (assoc acc al (get acc bang))) result aliases)))
+              (let [alias-bang (-> acc
+                                   (get bang)
+                                   ;; remove itself from this copy
+                                   (update :aliases #(disj % al))
+                                   ;; add reverse alias
+                                   (update :aliases #(conj % bang)))]
+                (-> (assoc acc al alias-bang)
+                    (update-in [bang :aliases] #(conj % al))))) result aliases)))
 
 (defn find [bang]
   (get (all) bang))
