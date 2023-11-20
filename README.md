@@ -184,6 +184,9 @@ Additional built-in bangs:
 | `pgdoc15` | Postgresql docs v15 |
 | `pgdoc16` | Postgresql docs v16 |
 | `pgdoc` | Postgresql docs current version |
+| `rails61` | Rails API latest v6.1.x (aliased as `rails6`) |
+| `rails70` | Rails API latest v7.0.x |
+| `rails71` | Rails API latest v7.1.x (aliased as `rails`) |
 | `rdoc` | rubydoc.info, gems only (fixes default, jump-to via @gem) |
 
 #### ghrepo

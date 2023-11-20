@@ -74,12 +74,12 @@
                 :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2F16%2F&q={{s|urlescape}}"}
    "pgdoc"     {:desc "Postgresql docs (current version)"
                 :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q={{s|urlescape}}"}
-   "rails61"   {:desc    "Rails API-docs v6.1.x"
+   "rails61"   {:desc    "Rails API v6.1.x"
                 :tpl     "https://api.rubyonrails.org/v6.1?q={{s|urlescape}}"
                 :aliases ["rails6"]}
-   "rails70"   {:desc "Rails API-docs v7.0.x"
+   "rails70"   {:desc "Rails API v7.0.x"
                 :tpl  "https://api.rubyonrails.org/v7.0?q={{s|urlescape}}"}
-   "rails71"   {:desc    "Rails API-docs v7.1.x"
+   "rails71"   {:desc    "Rails API v7.1.x"
                 :tpl     "https://api.rubyonrails.org/v7.1?q={{s|urlescape}}"
                 :aliases ["rails7"]}})
 
