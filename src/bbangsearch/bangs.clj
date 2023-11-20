@@ -47,11 +47,11 @@
                 :tpl  "https://rubygems.org/gems/{{s}}"}
    "gem"       {:desc "RubyGems (jump-to: @gem)"
                 :tpl  "{% ifmatches #\"^@\" s %}https://rubygems.org/gems/{{s|drop:1|join}}{% else %}https://rubygems.org/search?utf8=%E2%9C%93&query={{s|urlescape}}{% endifmatches %}"}
-   "ghrepo"    {:desc "Search/visit repo from working dir. See README."
+   "ghrepo"    {:desc "Search/visit (current) repos on GitHub"
                 :tpl  "{% if s|empty? %}https://github.com/{{org&project}}{% else %}https://github.com/search?q=repo%3A{{org&project|urlescape}}%20{{s|urlescape}}&type=code{% endif %}"}
    "ghdbf"     {:desc "GitHub dashboard feed"
                 :tpl  "https://github.com/dashboard-feed"}
-   "ghrel"     {:desc "GitHub releases"
+   "ghrel"     {:desc "Search/visit GitHub releases of (current) repo"
                 :tpl  "{% if s|empty? %}https://github.com/{{org&project}}/releases{% else %}https://github.com/{{org&project}}/releases?q={{s|urlescape}}&expanded=true{% endif %}"}
    "tldrlegal" {:desc "TL;DR Legal" ;; fixes default
                 :tpl  "https://www.tldrlegal.com/search?query={{s|urlescape}}"}
@@ -73,7 +73,15 @@
    "pgdoc16"   {:desc "Postgresql docs (v16)"
                 :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2F16%2F&q={{s|urlescape}}"}
    "pgdoc"     {:desc "Postgresql docs (current version)"
-                :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q={{s|urlescape}}"}})
+                :tpl  "https://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q={{s|urlescape}}"}
+   "rails61"   {:desc    "Rails API-docs v6.1.x"
+                :tpl     "https://api.rubyonrails.org/v6.1?q={{s|urlescape}}"
+                :aliases ["rails6"]}
+   "rails70"   {:desc "Rails API-docs v7.0.x"
+                :tpl  "https://api.rubyonrails.org/v7.0?q={{s|urlescape}}"}
+   "rails71"   {:desc    "Rails API-docs v7.1.x"
+                :tpl     "https://api.rubyonrails.org/v7.1?q={{s|urlescape}}"
+                :aliases ["rails7"]}})
 
 (defn built-in-bangs []
   (merge-with merge (ddg-bangs) additional-bangs))
@@ -86,7 +94,7 @@
 
 (defn user-config-bangs []
   (util/ensure-path-exists! @config-home)
-  (when-let [bangs-edn (util/when-pred fs/exists? (fs/file @config-home "bangs.edn"))]
+  (when-let [bangs-edn (util/file-exists?-> @config-home "bangs.edn")]
     (load-edn bangs-edn)))
 
 (defn folder-bang-maps []
@@ -98,7 +106,7 @@
   []
   (filter map? (conj (folder-bang-maps) (user-config-bangs))))
 
-(defn alias->bang-name
+(defn- alias->bang-name
   "Turn bang maps into one alias map"
   [ms]
   (reduce merge (map extract-aliases ms)))
