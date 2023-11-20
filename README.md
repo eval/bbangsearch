@@ -243,22 +243,30 @@ So when executing `bbang` from a project-folder (`~/projects/foo`), all bangs fr
 
 #### Example
 
-Here's an example `bangs.edn` that exists in a project-folder:
+Here's an example `bangs.edn` in some project-folder:
 ```clojure
 ;; ~/projects/foo/bangs.edn
 {
-  "project/rails" {:desc "Rails API"
-                   :tpl  "https://api.rubyonrails.org/v6.1.7.6?q={{s|urlescape}}"
-                   :aliases ["rails"]}
+  "apidocs12" {:desc "API docs v1.2"
+               :tpl  "http://localhost:3333/v1.2?q={{s|urlescape}}"
+               :aliases ["apidocs"]}
 }
 ```
 
 It's defined in the EDN-format (which is like JSON if you squint a bit).  
-A bang has a name (i.e. `project/rails`) and a map (`{,,,}`) containing a description (`:desc`), a template (`:tpl`) and (optionally) aliases.  
+A bang has a name (i.e. `apidocs12`) and a map (`{,,,}`) containing a description (`:desc`), a template (`:tpl`) and (optionally) aliases.  
 
-As you have guessed, the template is what ultimately yields the url. The templating system used is [Selmer](https://github.com/yogthos/Selmer/). Whatever you search for is escaped and appended to the `q=` in this example. So `bbang project/rails some query` will open url `https://api.rubyonrails.org/v6.1.7.6?q=some+query` (you can quickly test bangs with the url-flag, e.g. `bbang mybang query --url`).
+As you have guessed, the template is what ultimately yields the url. The templating system used is [Selmer](https://github.com/yogthos/Selmer/) (more info below), but most templates are of the form `https://some-url?q={{s|urlsescape}}`. So `bbang apidocs12 some query` will open url `http://localhost:3333/v1.2?q=some+query` (you can quickly test bangs with the url-flag, e.g. `bbang mybang query --url`).
 
-Aliases make the bang available under shorter (or existing) names. In this case we override the existing `rails` bang (normally pointing to the API docs of the current version of Rails) so whenever we walk into our project we can still keep using `bbang rails some query` and we have the right version API-docs.
+Aliases make a (new or existing) bang available under shorter (possibly existing) names. In this case we point a bang `apidocs` to `apidocs12`. You could imagine that in a big repository there might be a lot of apidoc variants: `apidocs11`, `apidocs13` etc. Combining these with an alias ensures users can always use `apidocs` and get the right version.
+
+Users using `apidocs` a lot could even decide to have an alias for this alias in their user-config to make it even shorter:
+```clojure
+# ~/.config/bbang/bangs.edn
+{
+  "apidocs" {:aliases ["ad"]}
+}
+```
 
 Using Selmer's tags you can do nifty things:
 ```clojure
