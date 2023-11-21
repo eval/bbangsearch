@@ -172,7 +172,7 @@ Additional built-in bangs:
 | `ghcclj` | Clojure code on GitHub (similar to `ghc`) |
 | `ghclj`  | Clojure projects on GitHub (similar to `gh`)  |
 | `ghdbf` | GitHub feed (no search) |
-| `ghrel` | Visit/search GitHub releases (org/project detect like ghrepo) |
+| `ghrel` | Visit/search GitHub releases (see doc below) |
 | `ghrepo` | Visit/search repo on GitHub (see doc below) |
 | `grep` | Grep.app |
 | `grepclj` | Grep.app for Clojure code |
@@ -186,7 +186,7 @@ Additional built-in bangs:
 | `pgdoc` | Postgresql docs current version |
 | `rails61` | Rails API latest v6.1.x (aliased as `rails6`) |
 | `rails70` | Rails API latest v7.0.x |
-| `rails71` | Rails API latest v7.1.x (aliased as `rails`) |
+| `rails71` | Rails API latest v7.1.x (aliased as `rails7`) |
 | `rdoc` | rubydoc.info, gems only (fixes default, jump-to via @gem) |
 
 #### ghrepo
@@ -232,6 +232,14 @@ $ bbang ghrepo _ some issue
 ```
 [^1]: in order of preference: the origin-url, any remote with an ssh-url
 
+#### ghrel
+
+This bang works like `ghrepo`:
+- `bbang ghrel` jumps to the releases page on GitHub of the project derived from the git working directory.
+- `bbang ghrel _ some query` searches releases of said project.
+- `bbang ghrel my-other-repos [some query]` visits/searches releases of another project from the current organization.
+- `bbang ghrel org/project [some query]` visits/searches releases of specified GitHub project.
+
 ### Customizations
 
 Custom/overriding bangs are defined in files named `bangs.edn` in the following places:
@@ -259,7 +267,7 @@ Here's an example `bangs.edn` in some project-folder:
 It's defined in the EDN-format (which is like JSON if you squint a bit).  
 A bang has a name (i.e. `apidocs12`) and a map (`{,,,}`) containing a description (`:desc`), a template (`:tpl`) and (optionally) aliases.  
 
-As you have guessed, the template is what ultimately yields the url. The templating system used is [Selmer](https://github.com/yogthos/Selmer/) (more info below), but most templates are of the form `https://some-url?q={{s|urlsescape}}`. So `bbang apidocs12 some query` will open url `http://localhost:3333/v1.2?q=some+query` (you can quickly test bangs with the url-flag, e.g. `bbang mybang query --url`).
+As you have guessed, the template is what ultimately yields the url. The templating system used is [Selmer](https://github.com/yogthos/Selmer/) (more info below), but most templates are of the form `https://some-url?q={{s|urlsescape}}`. So `bbang apidocs12 some query` will open url `http://localhost:3333/v1.2?q=some+query` (quickly test bangs with the url-flag, e.g. `bbang mybang query --url`).
 
 Aliases make a (new or existing) bang available under shorter (possibly existing) names. In this case we point a bang `apidocs` to `apidocs12`. You could imagine that in a big repository there might be a lot of apidoc variants: `apidocs11`, `apidocs13` etc. Combining these with an alias ensures users can always use `apidocs` and get the right version.
 
