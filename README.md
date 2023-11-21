@@ -126,7 +126,7 @@ $ curl -sL https://github.com/eval/bbangsearch/releases/download/stable/bbang-li
 
 ```shell
 $ bbang -h
-bbang v0.6.0
+bbang v0.7.0
 
 A CLI for DuckDuckGo's bang searches written in Babashka.
 
